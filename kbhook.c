@@ -162,7 +162,9 @@ int test_xi2(Display *display, int argc, char *argv[])
     int ctr_shift = 0;
     int ctr_super = 0;
     int ctr_other = 0;
-    int can_switch = 0;
+    int can_alt_shift = 0;
+    int can_ctrl_shift = 0;
+    int can_super_shift = 0;
 
     while(1)
     {
@@ -182,45 +184,49 @@ int test_xi2(Display *display, int argc, char *argv[])
                     if (event->detail == 64)
                     {
                         ctr_alt++;
-                        can_switch = 0;
+                        can_alt_shift |= ctr_shift && !ctr_ctrl && !ctr_super && !ctr_other;
+                        can_ctrl_shift = 0;
+                        can_super_shift = 0;
                         break;
                     }
 
                     if (event->detail == 37 || event->detail == 105)
                     {
                         ctr_ctrl++;
-                        can_switch |= ctr_shift && !ctr_alt && !ctr_super && !ctr_other;
+                        can_alt_shift = 0;
+                        can_ctrl_shift |= ctr_shift && !ctr_alt && !ctr_super && !ctr_other;
+                        can_super_shift = 0;
                         break;
                     }
 
                     if (event->detail == 50 || event->detail == 62)
                     {
                         ctr_shift++;
-                        can_switch |= ctr_ctrl && !ctr_alt && !ctr_super && !ctr_other;
+                        can_alt_shift |= ctr_alt && !ctr_ctrl && !ctr_super && !ctr_other;
+                        can_ctrl_shift |= ctr_ctrl && !ctr_alt && !ctr_super && !ctr_other;
+                        can_super_shift |= ctr_super && !ctr_ctrl && !ctr_alt && !ctr_other;
                         break;
                     }
 
                     if (event->detail == 133 || event->detail == 134)
                     {
                         ctr_super++;
-                        can_switch = 0;
+                        can_alt_shift = 0;
+                        can_ctrl_shift = 0;
+                        can_super_shift |= ctr_shift && !ctr_ctrl && !ctr_alt && !ctr_other;
                         break;
                     }
 
                     // Implement Ctrl+Alt+T
                     if (event->detail == 28 && ctr_ctrl && ctr_alt && !ctr_shift && !ctr_super && !ctr_other)
                     {
-                        system("gnome-terminal --working-directory=~");
-                    }
-
-                    // Implement Super+`
-                    if (event->detail == 49 && ctr_super && !ctr_ctrl && !ctr_alt && !ctr_shift && !ctr_other)
-                    {
-                        system("./layout_rotate_cjk.sh");
+                        system("SSH_AUTH_SOCK=/run/user/1000/keyring/ssh gnome-terminal --working-directory=~");
                     }
 
                     ctr_other++;
-                    can_switch = 0;
+                    can_alt_shift = 0;
+                    can_ctrl_shift = 0;
+                    can_super_shift = 0;
                     break;
                 }
                 case XI_RawKeyRelease:
@@ -228,6 +234,13 @@ int test_xi2(Display *display, int argc, char *argv[])
                     if (event->detail == 64)
                     {
                         ctr_alt -= ctr_alt > 0;
+
+                        // Implement Alt+Shift (on Alt release)
+                        if (ctr_shift && !ctr_alt && can_alt_shift && !ctr_ctrl && !ctr_super && !ctr_other)
+                        {
+                            system("./layout_rotate_cjk.sh");
+                        }
+
                         break;
                     }
 
@@ -236,7 +249,7 @@ int test_xi2(Display *display, int argc, char *argv[])
                         ctr_ctrl -= ctr_ctrl > 0;
 
                         // Implement Ctrl+Shift (on Ctrl release)
-                        if (ctr_shift && can_switch && !ctr_ctrl && !ctr_alt && !ctr_super && !ctr_other)
+                        if (ctr_shift && !ctr_ctrl && can_ctrl_shift && !ctr_alt && !ctr_super && !ctr_other)
                         {
                             system("./layout_rotate.sh");
                         }
@@ -248,8 +261,14 @@ int test_xi2(Display *display, int argc, char *argv[])
                     {
                         ctr_shift -= ctr_shift > 0;
 
+                        // Implement Alt+Shift (on Shift release)
+                        if (ctr_alt && !ctr_shift && can_alt_shift && !ctr_ctrl && !ctr_super && !ctr_other)
+                        {
+                            system("./layout_rotate_cjk.sh");
+                        }
+
                         // Implement Ctrl+Shift (on Shift release)
-                        if (ctr_ctrl && can_switch && !ctr_shift && !ctr_alt && !ctr_super && !ctr_other)
+                        if (ctr_ctrl && !ctr_shift && can_ctrl_shift && !ctr_alt && !ctr_super && !ctr_other)
                         {
                             system("./layout_rotate.sh");
                         }
