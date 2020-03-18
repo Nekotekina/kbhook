@@ -220,7 +220,7 @@ int test_xi2(Display *display, int argc, char *argv[])
                     // Implement Ctrl+Alt+T
                     if (event->detail == 28 && ctr_ctrl && ctr_alt && !ctr_shift && !ctr_super && !ctr_other)
                     {
-                        system("SSH_AUTH_SOCK=/run/user/1000/keyring/ssh gnome-terminal --working-directory=~");
+                        system("./terminal.sh");
                     }
 
                     ctr_other++;
